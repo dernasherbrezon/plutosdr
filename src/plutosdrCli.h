@@ -13,7 +13,7 @@
 #include <iio.h>
 #include <signal.h>
 
-int plutosdrConfigureAndRun(unsigned long int frequency, unsigned long int sampleRate, float gain, unsigned int bufferSize);
-void stopAsync();
+int plutosdr_cli_configure_and_run(unsigned long int frequency, unsigned long int sampleRate, float gain, unsigned int bufferSize);
+void plutosdr_cli_stop_async();
 
 #endif /* plutosdrCli_H_ */

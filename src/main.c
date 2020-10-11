@@ -1,14 +1,14 @@
 #include <getopt.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "plutosdrCli.h"
-#include "sigHandler.h"
 
 int main(int argc, char *argv[]) {
 	int opt;
 	opterr = 0;
 	unsigned long int frequency;
 	unsigned long int sampleRate;
-	float gain;
+	float gain = -1;
 	unsigned int bufferSize;
 	while ((opt = getopt(argc, argv, "f:s:g:hb:")) != EOF) {
 		switch (opt) {
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "sampleRate not specified\n");
 		return EXIT_FAILURE;
 	}
-	if (!gain) {
+	if (gain < 0) {
 		fprintf(stderr, "gain not specified\n");
 		return EXIT_FAILURE;
 	}
@@ -47,8 +47,11 @@ int main(int argc, char *argv[]) {
 		bufferSize = 256;
 	}
 
-	setup_sig_handler();
+	signal(SIGINT, plutosdr_cli_stop_async);
+	signal(SIGHUP, plutosdr_cli_stop_async);
+	signal(SIGSEGV, plutosdr_cli_stop_async);
+	signal(SIGTERM, plutosdr_cli_stop_async);
 
-	return plutosdrConfigureAndRun(frequency, sampleRate, gain, bufferSize);
+	return plutosdr_cli_configure_and_run(frequency, sampleRate, gain, bufferSize);
 }
 
