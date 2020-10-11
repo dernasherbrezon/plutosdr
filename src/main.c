@@ -1,6 +1,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include "plutosdrCli.h"
+#include "sigHandler.h"
 
 int main(int argc, char *argv[]) {
 	int opt;
@@ -8,7 +9,8 @@ int main(int argc, char *argv[]) {
 	unsigned long int frequency;
 	unsigned long int sampleRate;
 	float gain;
-	while ((opt = getopt(argc, argv, "f:s:g:h")) != EOF) {
+	unsigned int bufferSize;
+	while ((opt = getopt(argc, argv, "f:s:g:hb:")) != EOF) {
 		switch (opt) {
 		case 'f':
 			frequency = strtoul(optarg, NULL, 10);
@@ -16,12 +18,15 @@ int main(int argc, char *argv[]) {
 		case 's':
 			sampleRate = strtoul(optarg, NULL, 10);
 			break;
+		case 'b':
+			bufferSize = strtoul(optarg, NULL, 10);
+			break;
 		case 'g':
 			gain = strtof(optarg, NULL);
 			break;
 		case 'h':
 		default:
-			fprintf(stderr, "%s -f frequency -s sampleRate -g gain [-h]\n", argv[0]);
+			fprintf(stderr, "%s -f frequency -s sampleRate -g gain [-b buffer size in samples] [-h]\n", argv[0]);
 			return EXIT_FAILURE;
 		}
 	}
@@ -38,7 +43,12 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "gain not specified\n");
 		return EXIT_FAILURE;
 	}
+	if (!bufferSize) {
+		bufferSize = 256;
+	}
 
-	return plutosdrConfigureAndRun(frequency, sampleRate, gain);
+	setup_sig_handler();
+
+	return plutosdrConfigureAndRun(frequency, sampleRate, gain, bufferSize);
 }
 
