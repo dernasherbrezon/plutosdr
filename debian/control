@@ -3,7 +3,7 @@ Maintainer: Andrey Rodionov <dernasherbrezon@gmail.com>
 Section: admin
 Priority: optional
 Standards-Version: 3.9.7
-Build-Depends: debhelper (>= 9.0.0), cmake, libiio-dev (>= 0.16), pkg-config
+Build-Depends: debhelper (>= 9.0.0), cmake, libiio-dev (>= 0.7), pkg-config
 Homepage: https://github.com/dernasherbrezon/plutosdr-Cli
 
 Package: plutosdr-Cli
@@ -12,4 +12,4 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, libiio0
 Description: Configures low bandwidth mode for plutosdr 
  This application configures plutosdr to run in low bandwidth
  mode: 520khz. This is suitable for narrowband telemetry and
- amateur protocols.
+ radio amateur protocols.
