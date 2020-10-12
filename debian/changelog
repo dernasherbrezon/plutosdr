@@ -1,0 +1,5 @@
+plutosdr-Cli (1.0.0-1) disco; urgency=medium
+
+  * Initial release. (Closes: #1)
+
+ -- Andrey Rodionov <dernasherbrezon@gmail.com>  Mon, 23 Mar 2020 10:17:21 +0100
