@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: plutosdr-Cli
-Source: https://github.com/dernasherbrezon/plutosdr-Cli
+Upstream-Name: plutosdr
+Source: https://github.com/dernasherbrezon/plutosdr
 
 Files: *
 Copyright: 2020 Andrey Rodionov <dernasherbrezon@gmail.com>

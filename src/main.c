@@ -47,11 +47,11 @@ int main(int argc, char *argv[]) {
 		bufferSize = 256;
 	}
 
-	signal(SIGINT, plutosdr_cli_stop_async);
-	signal(SIGHUP, plutosdr_cli_stop_async);
-	signal(SIGSEGV, plutosdr_cli_stop_async);
-	signal(SIGTERM, plutosdr_cli_stop_async);
+	signal(SIGINT, plutosdr_stop_async);
+	signal(SIGHUP, plutosdr_stop_async);
+	signal(SIGSEGV, plutosdr_stop_async);
+	signal(SIGTERM, plutosdr_stop_async);
 
-	return plutosdr_cli_configure_and_run(frequency, sampleRate, gain, bufferSize);
+	return plutosdr_configure_and_run(frequency, sampleRate, gain, bufferSize);
 }
 
