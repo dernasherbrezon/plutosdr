@@ -1,7 +1,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <signal.h>
-#include "plutosdrCli.h"
+
+#include "plutosdr.h"
 
 int main(int argc, char *argv[]) {
 	int opt;

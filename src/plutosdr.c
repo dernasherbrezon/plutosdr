@@ -1,8 +1,9 @@
+#include "plutosdr.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "plutosdrCli.h"
 
 #define BUF_SIZE 16384
 #define FIR_BUF_SIZE	8192
