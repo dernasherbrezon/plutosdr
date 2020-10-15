@@ -10,14 +10,10 @@ plutosdr -f 434000000 -s 580000 -g 0.0 -b 4096 | gzip > file.raw.gz
 
 # Installation
 
-Make sure libiio installed. See [official documentation](https://github.com/analogdevicesinc/libiio) on how to do it. Make sure the latest version installed (at least 0.21).
-
 ```
-git clone https://github.com/dernasherbrezon/plutosdr.git
-cd plutosdr
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
+sudo apt-get install dirmngr
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A5A70917
+sudo bash -c "echo 'deb [arch=armhf] http://s3.amazonaws.com/r2cloud r2cloud main' > /etc/apt/sources.list.d/r2cloud.list"
+sudo apt-get update
+sudo apt-get install plutosdr
 ```
