@@ -105,20 +105,9 @@ int plutosdr_set_txrx_fir_enable(struct iio_device *dev, int enable) {
 	return ret;
 }
 
-int plutosdr_write_buffer_stdout() {
-	void *start = iio_buffer_start(buffer);
-	size_t len = (intptr_t) iio_buffer_end(buffer) - (intptr_t) start;
-
-	while (len > 0) {
-		size_t nb = fwrite(start, 1, len, stdout);
-		if (!nb) {
-			return nb;
-		}
-
-		len -= nb;
-		start = (void*) ((intptr_t) start + nb);
-	}
-	return 0;
+static ssize_t plutosdr_write_buffer_stdout(const struct iio_channel *chn, void *buf, size_t len, void *d) {
+	fwrite(buf, 1, len, stdout);
+	return (ssize_t) len;
 }
 
 int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sampleRate, float gain, unsigned int bufferSize) {
@@ -320,7 +309,7 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 			break;
 		}
 
-		ret = plutosdr_write_buffer_stdout();
+		ret = iio_buffer_foreach_sample(buffer, plutosdr_write_buffer_stdout, NULL);
 		if (ret < 0) {
 			fprintf(stderr, "unable to write to stdout\n");
 			break;
