@@ -106,8 +106,7 @@ int plutosdr_set_txrx_fir_enable(struct iio_device *dev, int enable) {
 }
 
 static ssize_t plutosdr_write_buffer_stdout(const struct iio_channel *chn, void *buf, size_t len, void *d) {
-	fwrite(buf, 1, len, stdout);
-	return (ssize_t) len;
+	return fwrite(buf, 1, len, stdout);
 }
 
 int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sampleRate, float gain, unsigned int bufferSize) {
@@ -223,20 +222,6 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 		fprintf(stderr, "fir filter enabled\n");
 	}
 
-	ret = iio_channel_attr_write_longlong(voltage0, "sampling_frequency", sampleRate);
-	if (ret < 0) {
-		plutosdr_print_message("unable to setup sampling frequency: %s\n", ret);
-		iio_context_destroy(ctx);
-		return EXIT_FAILURE;
-	}
-
-	ret = iio_channel_attr_write_longlong(voltage0, "rf_bandwidth", 400000);
-	if (ret < 0) {
-		plutosdr_print_message("unable to setup rf_bandwidth: %s\n", ret);
-		iio_context_destroy(ctx);
-		return EXIT_FAILURE;
-	}
-
 	if (gain > 0.0) {
 		ret = iio_channel_attr_write(voltage0, "gain_control_mode", "manual");
 		if (ret < 0) {
@@ -278,7 +263,27 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 		}
 		if (!iio_channel_is_output(ch)) {
 			iio_channel_enable(ch);
+			ret = iio_channel_attr_write_longlong(ch, "sampling_frequency", sampleRate);
+			if (ret < 0) {
+				plutosdr_print_message("unable to set fpga decimation: %s\n", ret);
+				iio_context_destroy(ctx);
+				return EXIT_FAILURE;
+			}
 		}
+	}
+
+	ret = iio_channel_attr_write_longlong(voltage0, "sampling_frequency", 8 * sampleRate);
+	if (ret < 0) {
+		plutosdr_print_message("unable to setup sampling frequency: %s\n", ret);
+		iio_context_destroy(ctx);
+		return EXIT_FAILURE;
+	}
+
+	ret = iio_channel_attr_write_longlong(voltage0, "rf_bandwidth", 8 * sampleRate);
+	if (ret < 0) {
+		plutosdr_print_message("unable to setup rf_bandwidth: %s\n", ret);
+		iio_context_destroy(ctx);
+		return EXIT_FAILURE;
 	}
 
 	ssize_t sample_size = iio_device_get_sample_size(inputDevice);
@@ -311,7 +316,9 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 
 		ret = iio_buffer_foreach_sample(buffer, plutosdr_write_buffer_stdout, NULL);
 		if (ret < 0) {
-			fprintf(stderr, "unable to write to stdout\n");
+			if (app_running) {
+				fprintf(stderr, "unable to write to stdout\n");
+			}
 			break;
 		}
 	}
