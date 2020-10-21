@@ -222,6 +222,20 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 		fprintf(stderr, "fir filter enabled\n");
 	}
 
+	ret = iio_channel_attr_write_longlong(voltage0, "sampling_frequency", 8 * sampleRate);
+	if (ret < 0) {
+		plutosdr_print_message("unable to setup sampling frequency: %s\n", ret);
+		iio_context_destroy(ctx);
+		return EXIT_FAILURE;
+	}
+
+	ret = iio_channel_attr_write_longlong(voltage0, "rf_bandwidth", 8 * sampleRate);
+	if (ret < 0) {
+		plutosdr_print_message("unable to setup rf_bandwidth: %s\n", ret);
+		iio_context_destroy(ctx);
+		return EXIT_FAILURE;
+	}
+
 	if (gain > 0.0) {
 		ret = iio_channel_attr_write(voltage0, "gain_control_mode", "manual");
 		if (ret < 0) {
@@ -270,20 +284,6 @@ int plutosdr_configure_and_run(unsigned long int frequency, unsigned long int sa
 				return EXIT_FAILURE;
 			}
 		}
-	}
-
-	ret = iio_channel_attr_write_longlong(voltage0, "sampling_frequency", 8 * sampleRate);
-	if (ret < 0) {
-		plutosdr_print_message("unable to setup sampling frequency: %s\n", ret);
-		iio_context_destroy(ctx);
-		return EXIT_FAILURE;
-	}
-
-	ret = iio_channel_attr_write_longlong(voltage0, "rf_bandwidth", 8 * sampleRate);
-	if (ret < 0) {
-		plutosdr_print_message("unable to setup rf_bandwidth: %s\n", ret);
-		iio_context_destroy(ctx);
-		return EXIT_FAILURE;
 	}
 
 	ssize_t sample_size = iio_device_get_sample_size(inputDevice);
