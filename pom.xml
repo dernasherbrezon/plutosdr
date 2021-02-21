@@ -56,7 +56,7 @@
 				</executions>
 				<configuration>
 					<component>main</component>
-					<codename>r2cloud</codename>
+					<codename>${codename}</codename>
 					<sign>true</sign>
 					<keyname>A5A70917</keyname>
 					<passphraseServerId>r2cloud</passphraseServerId>
