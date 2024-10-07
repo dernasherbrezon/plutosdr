@@ -10,9 +10,9 @@
 int main(int argc, char *argv[]) {
   int opt;
   opterr = 0;
-  unsigned long int frequency;
-  unsigned long int sampleRate;
-  unsigned int bufferSize;
+  unsigned long int frequency = 0;
+  unsigned long int sampleRate = 0;
+  unsigned int buffer_size = 0;
   char *filename = NULL;
   while ((opt = getopt(argc, argv, "f:s:i:hb:")) != EOF) {
     switch (opt) {
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
         sampleRate = strtoul(optarg, NULL, 10);
         break;
       case 'b':
-        bufferSize = strtoul(optarg, NULL, 10);
+        buffer_size = strtoul(optarg, NULL, 10);
         break;
       case 'i':
         filename = optarg;
@@ -35,16 +35,16 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (!frequency) {
+  if (frequency == 0) {
     fprintf(stderr, "frequency not specified\n");
     return EXIT_FAILURE;
   }
-  if (!sampleRate) {
+  if (sampleRate == 0) {
     fprintf(stderr, "sampleRate not specified\n");
     return EXIT_FAILURE;
   }
-  if (!bufferSize) {
-    bufferSize = 256;
+  if (buffer_size == 0) {
+    buffer_size = 256;
   }
 
   FILE *input;
@@ -63,5 +63,9 @@ int main(int argc, char *argv[]) {
   signal(SIGSEGV, plutosdr_stop_async);
   signal(SIGTERM, plutosdr_stop_async);
 
-  return plutosdr_tx(frequency, sampleRate, bufferSize, input);
+  int code = plutosdr_tx(frequency, sampleRate, buffer_size, input);
+  if (filename != NULL) {
+    fclose(input);
+  }
+  return code;
 }

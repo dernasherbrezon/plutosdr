@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <inttypes.h>
 
 #define FIR_BUF_SIZE  8192
 
@@ -59,30 +60,6 @@ void plutosdr_print_message(const char *message, ssize_t ret) {
   fprintf(stderr, message, err_str);
 }
 
-struct iio_device *plutosdr_find_device_with_input_channels(struct iio_context *ctx, const char *suffix) {
-  unsigned int nb_devices = iio_context_get_devices_count(ctx);
-  unsigned int nb_channels = 0;
-  for (int i = 0; i < nb_devices; i++) {
-    struct iio_device *curDev = iio_context_get_device(ctx, i);
-    const char *name = iio_device_get_name(curDev);
-    if (name == NULL) {
-      continue;
-    }
-    if (!plutosdr_ends_with(name, suffix)) {
-      continue;
-    }
-    nb_channels = iio_device_get_channels_count(curDev);
-    for (int j = 0; j < nb_channels; j++) {
-      struct iio_channel *ch = iio_device_get_channel(curDev, j);
-      if (!iio_channel_is_output(ch)) {
-        fprintf(stderr, "input device: %s\n", name);
-        return curDev;
-      }
-    }
-  }
-  return NULL;
-}
-
 struct iio_device *plutosdr_find_device_bysuffix(struct iio_context *ctx, const char *suffix) {
   unsigned int nb_devices = iio_context_get_devices_count(ctx);
   struct iio_device *dev = NULL;
@@ -93,7 +70,7 @@ struct iio_device *plutosdr_find_device_bysuffix(struct iio_context *ctx, const 
       continue;
     }
     if (plutosdr_ends_with(name, suffix)) {
-      fprintf(stderr, "device: %s\n", name);
+      fprintf(stderr, "found device: %s\n", name);
       dev = curDev;
       break;
     }
@@ -134,10 +111,6 @@ int plutosdr_set_txrx_fir_enable(struct iio_device *dev, int enable) {
     ret = iio_channel_attr_write_bool(iio_device_find_channel(dev, "out", false), "voltage_filter_fir_en", enable != 0);
   }
   return ret;
-}
-
-static ssize_t plutosdr_write_buffer_stdout(const struct iio_channel *chn, void *buf, size_t len, void *d) {
-  return (ssize_t) fwrite(buf, 1, len, stdout);
 }
 
 int plutosdr_find_first_ctx(struct iio_context **result) {
@@ -228,6 +201,7 @@ int plutosdr_configure_channel(struct iio_context *ctx, channel_config *cfg, iio
     ERROR_CHECK_CODE(iio_channel_attr_write_longlong(altvoltage, "powerdown", 0));
   }
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(altvoltage, "frequency", (long long) cfg->center_freq));
+  fprintf(stderr, "frequency: %" PRIu64 "\n", cfg->center_freq);
   struct iio_channel *voltage = plutosdr_find_phy_channel(dev, d);
   if (voltage == NULL) {
     fprintf(stderr, "unable to find phy channel\n");
@@ -236,7 +210,7 @@ int plutosdr_configure_channel(struct iio_context *ctx, channel_config *cfg, iio
 
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(voltage, "sampling_frequency", cfg->sampling_freq));
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(voltage, "rf_bandwidth", cfg->sampling_freq));
-
+  fprintf(stderr, "sampling frequency: %" PRIu64 "\n", cfg->sampling_freq);
   if (d == RX) {
     switch (cfg->gain_control_mode) {
       case IIO_GAIN_MODE_MANUAL:
@@ -294,7 +268,7 @@ int plutosdr_setup_fir_filter(struct iio_context *ctx) {
   return 0;
 }
 
-int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, float gain, unsigned int buffer_size) {
+int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, float gain, unsigned int buffer_size, unsigned long int number_of_samples_to_read, FILE *output) {
   ssize_t ret;
   struct iio_context *ctx;
   ERROR_CHECK_CODE(plutosdr_find_first_ctx(&ctx));
@@ -339,6 +313,15 @@ int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, floa
     return EXIT_FAILURE;
   }
 
+  struct iio_channel *rx_i = iio_device_find_channel(rx_device, "voltage0", false);
+  if (rx_i == NULL) {
+    fprintf(stderr, "unable to find channel\n");
+    iio_context_destroy(ctx);
+    return EXIT_FAILURE;
+  }
+
+  size_t remaining_bytes = number_of_samples_to_read * sizeof(int16_t);
+
   while (app_running) {
     ret = iio_buffer_refill(buffer);
     if (ret < 0) {
@@ -348,12 +331,26 @@ int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, floa
       break;
     }
 
-    ret = iio_buffer_foreach_sample(buffer, plutosdr_write_buffer_stdout, NULL);
-    if (ret < 0) {
-      if (app_running) {
-        fprintf(stderr, "unable to write to stdout\n");
+    uint8_t *p_end = (uint8_t *) iio_buffer_end(buffer);
+    uint8_t *p_start = (uint8_t *) iio_buffer_first(buffer, rx_i);
+
+    size_t written = 0;
+    size_t remaining = p_end - p_start;
+    while (remaining > 0) {
+      size_t actually_written = fwrite(p_start + written, sizeof(uint8_t), remaining, output);
+      if (actually_written == 0) {
+        fprintf(stderr, "cannot write more\n");
+        break;
       }
-      break;
+      remaining -= actually_written;
+      written += actually_written;
+    }
+
+    if (number_of_samples_to_read != 0) {
+      if (written > remaining_bytes) {
+        break;
+      }
+      remaining_bytes -= written;
     }
   }
 

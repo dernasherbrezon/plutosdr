@@ -24,7 +24,7 @@ typedef struct {
   double manual_gain;
 } channel_config;
 
-int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, float gain, unsigned int buffer_size);
+int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, float gain, unsigned int buffer_size, unsigned long int number_of_samples_to_read, FILE *output);
 
 int plutosdr_tx(unsigned long int frequency, unsigned long int sample_rate, unsigned int buffer_size, FILE *fp);
 
