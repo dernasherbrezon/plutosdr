@@ -196,6 +196,7 @@ int plutosdr_configure_channel(struct iio_context *ctx, channel_config *cfg, iio
     if (altvoltage1 != NULL) {
       ERROR_CHECK_CODE(iio_channel_attr_write_longlong(altvoltage1, "powerdown", 1));
     }
+    ERROR_CHECK_CODE(iio_channel_attr_write_longlong(altvoltage, "powerdown", 0));
   }
   if (d == TX) {
     ERROR_CHECK_CODE(iio_channel_attr_write_longlong(altvoltage, "powerdown", 0));
@@ -278,7 +279,7 @@ int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, floa
       .sampling_freq = sample_rate,
       .center_freq = frequency,
   };
-  if (gain == 0.0) {
+  if (gain != 0.0) {
     cfg.gain_control_mode = IIO_GAIN_MODE_MANUAL;
   } else {
     cfg.gain_control_mode = IIO_GAIN_MODE_SLOW_ATTACK;
@@ -293,17 +294,19 @@ int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, floa
     iio_context_destroy(ctx);
     return EXIT_FAILURE;
   }
-  unsigned int nb_channels = iio_device_get_channels_count(rx_device);
-  for (int i = 0; i < nb_channels; i++) {
-    struct iio_channel *ch = iio_device_get_channel(rx_device, i);
-    if (ch == NULL) {
-      continue;
-    }
-    if (!iio_channel_is_output(ch)) {
-      iio_channel_enable(ch);
-      ERROR_CHECK(iio_channel_attr_write_longlong(ch, "sampling_frequency", (long long) sample_rate));
-    }
+
+  // Find RX I (in-phase) and Q (quadrature) channels
+  struct iio_channel *rx0_i = iio_device_find_channel(rx_device, "voltage0", false);
+  struct iio_channel *rx0_q = iio_device_find_channel(rx_device, "voltage1", false);
+  if (!rx0_i || !rx0_q) {
+    fprintf(stderr, "Unable to find RX channels.\n");
+    iio_context_destroy(ctx);
+    return -1;
   }
+
+  // Enable channels
+  iio_channel_enable(rx0_i);
+  iio_channel_enable(rx0_q);
 
   fprintf(stderr, "buffer size: %d samples\n", buffer_size);
   buffer = iio_device_create_buffer(rx_device, buffer_size, false);
@@ -313,29 +316,19 @@ int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, floa
     return EXIT_FAILURE;
   }
 
-  struct iio_channel *rx_i = iio_device_find_channel(rx_device, "voltage0", false);
-  if (rx_i == NULL) {
-    fprintf(stderr, "unable to find channel\n");
-    iio_context_destroy(ctx);
-    return EXIT_FAILURE;
-  }
-
   size_t remaining_bytes = number_of_samples_to_read * sizeof(int16_t);
 
   while (app_running) {
-    ret = iio_buffer_refill(buffer);
-    if (ret < 0) {
+    ssize_t actual_bytes_read = iio_buffer_refill(buffer);
+    if (actual_bytes_read < 0) {
       if (app_running) {
-        plutosdr_print_message("unable to refill buffer: %s\n", ret);
+        plutosdr_print_message("unable to refill buffer: %s\n", actual_bytes_read);
       }
       break;
     }
-
-    uint8_t *p_end = (uint8_t *) iio_buffer_end(buffer);
-    uint8_t *p_start = (uint8_t *) iio_buffer_first(buffer, rx_i);
-
+    uint8_t *p_start = (uint8_t *) iio_buffer_first(buffer, rx0_i);
     size_t written = 0;
-    size_t remaining = p_end - p_start;
+    size_t remaining = actual_bytes_read;
     while (remaining > 0) {
       size_t actually_written = fwrite(p_start + written, sizeof(uint8_t), remaining, output);
       if (actually_written == 0) {

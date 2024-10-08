@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
   opterr = 0;
   unsigned long int frequency = 0;
   unsigned long int sample_rate = 0;
-  float gain = -1;
+  float gain = 0;
   unsigned int buffer_size = 0;
   char *filename = NULL;
   unsigned long int number_of_samples_to_read = 0;
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
         break;
       case 'h':
       default:
-        fprintf(stderr, "%s -f frequency -s sample_rate -g gain [-o output_file] [-b buffer size in samples] [-h]\n", argv[0]);
+        fprintf(stderr, "%s -f frequency -s sample_rate [-g gain] [-o output_file] [-b buffer size in samples] [-h]\n", argv[0]);
         return EXIT_FAILURE;
     }
   }
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   if (gain < 0) {
-    fprintf(stderr, "gain not specified\n");
+    fprintf(stderr, "invalid gain specified\n");
     return EXIT_FAILURE;
   }
   if (buffer_size == 0) {
