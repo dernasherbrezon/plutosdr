@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
   ERROR_CHECK_NOT_NULL("unable to find tx lo channel", tx_lo);
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(tx_lo, "powerdown", 1));
 
-  struct iio_channel *lo = iio_device_find_channel(dev, "RX_LO", false);
+  struct iio_channel *lo = iio_device_find_channel(dev, "RX_LO", true);
   ERROR_CHECK_NOT_NULL("unable to find lo channel", lo);
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "powerdown", 0));
   ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "frequency", (long long) frequency));

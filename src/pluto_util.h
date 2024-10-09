@@ -16,7 +16,7 @@
 #define ERROR_CHECK_NOT_NULL(y, x)           \
   do {                           \
     if (x == NULL) {                      \
-        fprintf(stderr, y);                                     \
+        fprintf(stderr, "%s\n", y);                                     \
         if( buffer != NULL ) {               \
           iio_buffer_destroy(buffer);                                     \
         } \

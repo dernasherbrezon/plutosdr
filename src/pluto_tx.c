@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   int opt;
   opterr = 0;
   unsigned long int frequency = 0;
-  unsigned long int sampleRate = 0;
+  unsigned long int sample_rate = 0;
   unsigned int buffer_size = 0;
   char *filename = NULL;
   while ((opt = getopt(argc, argv, "f:s:i:hb:")) != EOF) {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         frequency = strtoul(optarg, NULL, 10);
         break;
       case 's':
-        sampleRate = strtoul(optarg, NULL, 10);
+        sample_rate = strtoul(optarg, NULL, 10);
         break;
       case 'b':
         buffer_size = strtoul(optarg, NULL, 10);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "frequency not specified\n");
     return EXIT_FAILURE;
   }
-  if (sampleRate == 0) {
+  if (sample_rate == 0) {
     fprintf(stderr, "sampleRate not specified\n");
     return EXIT_FAILURE;
   }
@@ -111,7 +111,8 @@ int main(int argc, char *argv[]) {
 
   struct iio_channel *phy_channel = iio_device_find_channel(dev, "voltage0", true);
   ERROR_CHECK_NOT_NULL("unable to find phy channel", phy_channel);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sampleRate));
+  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sample_rate));
+  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "rf_bandwidth", sample_rate));
 
   // Create a TX buffer
   buffer = iio_device_create_buffer(tx, buffer_size, false);
