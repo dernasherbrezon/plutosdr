@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     if (format == FORMAT_CU8) {
       samples_count = actually_read / (sizeof(uint8_t) * 2);
       for (size_t i = 0; i < actually_read; i++) {
-        ((int16_t *) p_start)[i] = ((int16_t) ((((int16_t) input_buffer[i]) - 128) / 128.0) * 32768);
+        ((int16_t *) p_start)[i] = (int16_t) (((input_buffer[i] - 128.0) / 128.0) * 32768);
       }
     }
 
@@ -147,11 +147,11 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "short write\n");
       break;
     }
-
   }
   if (filename != NULL) {
     fclose(input);
   }
+  iio_channel_attr_write_longlong(lo, "powerdown", 1);
   iio_buffer_cancel(buffer);
   iio_context_destroy(ctx);
   fprintf(stderr, "stopped\n");
