@@ -5,6 +5,26 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define ERROR_CHECK_CODE(x)           \
+  do {                           \
+    int __err_rc = (x);          \
+    if (__err_rc < 0) {             \
+        return __err_rc;                              \
+    }                            \
+  } while (0)
+
+#define ERROR_CHECK_NOT_NULL(y, x)           \
+  do {                           \
+    if (x == NULL) {                      \
+        fprintf(stderr, y);                                     \
+        if( buffer != NULL ) {               \
+          iio_buffer_destroy(buffer);                                     \
+        } \
+        iio_context_destroy(ctx); \
+        return EXIT_FAILURE;                                  \
+    }                            \
+  } while (0)
+
 typedef enum {
   RX, TX
 } iio_direction;
@@ -16,6 +36,12 @@ typedef enum {
   IIO_GAIN_MODE_HYBRID = 3
 } gain_mode;
 
+
+typedef enum {
+  FORMAT_UNKNOWN = 0,
+  FORMAT_CU8 = 1
+} iq_format;
+
 typedef struct {
   uint64_t sampling_freq; // Baseband sample rate in Hz
   uint64_t center_freq; // Local oscillator frequency in Hz
@@ -24,14 +50,8 @@ typedef struct {
   double manual_gain;
 } channel_config;
 
-int plutosdr_rx(unsigned long int frequency, unsigned long int sample_rate, float gain, unsigned int buffer_size, unsigned long int number_of_samples_to_read, FILE *output);
+struct iio_context * plutosdr_find_first_ctx();
 
-int plutosdr_tx(unsigned long int frequency, unsigned long int sample_rate, unsigned int buffer_size, FILE *fp);
-
-int plutosdr_find_first_ctx(struct iio_context **result);
-
-int plutosdr_configure_channel(struct iio_context *ctx, channel_config *cfg, iio_direction type);
-
-void plutosdr_stop_async();
+int plutosdr_disable_dds(struct iio_device *tx_device);
 
 #endif /* pluto_util_h_ */
