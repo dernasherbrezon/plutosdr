@@ -17,6 +17,9 @@ iq_format detect_format(const char *filename) {
   if (strcmp(dot + 1, "cu8") == 0) {
     return FORMAT_CU8;
   }
+  if (strcmp(dot + 1, "cs16") == 0) {
+    return FORMAT_CS16;
+  }
   return FORMAT_UNKNOWN;
 }
 
@@ -74,7 +77,7 @@ int main(int argc, char *argv[]) {
     }
   }
   if (format == FORMAT_UNKNOWN) {
-    fprintf(stderr, "unable to detect format from the filename");
+    fprintf(stderr, "unable to detect format from the filename\n");
     return EXIT_FAILURE;
   }
 
@@ -121,6 +124,10 @@ int main(int argc, char *argv[]) {
   size_t input_buffer_size;
   if (format == FORMAT_CU8) {
     input_buffer_size = buffer_size * sizeof(uint8_t) * 2;
+  } else if (format == FORMAT_CS16) {
+    input_buffer_size = buffer_size * sizeof(int16_t) * 2;
+  } else {
+    input_buffer_size = 0;
   }
   uint8_t *input_buffer = malloc(input_buffer_size);
   ERROR_CHECK_NOT_NULL("unable to init temporary buffefr", input_buffer);
@@ -139,6 +146,9 @@ int main(int argc, char *argv[]) {
       for (size_t i = 0; i < actually_read; i++) {
         ((int16_t *) p_start)[i] = (int16_t) (((input_buffer[i] - 128.0) / 128.0) * 32768);
       }
+    } else if (format == FORMAT_CS16) {
+      samples_count = actually_read / (sizeof(int16_t) * 2);
+      memcpy(p_start, input_buffer, actually_read);
     }
 
     // always use push_partial because normal push won't reset buffer to full length

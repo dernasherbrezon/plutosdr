@@ -39,7 +39,8 @@ typedef enum {
 
 typedef enum {
   FORMAT_UNKNOWN = 0,
-  FORMAT_CU8 = 1
+  FORMAT_CU8 = 1,
+  FORMAT_CS16 = 2
 } iq_format;
 
 typedef struct {
