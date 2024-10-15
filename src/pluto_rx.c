@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, plutosdr_stop_async);
 
   struct iio_buffer *buffer = NULL;
+  struct iio_channel *lo = NULL;
   struct iio_context *ctx = plutosdr_find_first_ctx();
   ERROR_CHECK_NOT_NULL("unable to find ctx", ctx);
 
@@ -90,12 +91,12 @@ int main(int argc, char *argv[]) {
   // details: https://wiki.analog.com/university/tools/pluto/hacking/listening_to_yourself
   struct iio_channel *tx_lo = iio_device_find_channel(dev, "TX_LO", true);
   ERROR_CHECK_NOT_NULL("unable to find tx lo channel", tx_lo);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(tx_lo, "powerdown", 1));
+  ERROR_CHECK_CODE("unable to power down tx", iio_channel_attr_write_longlong(tx_lo, "powerdown", 1));
 
-  struct iio_channel *lo = iio_device_find_channel(dev, "RX_LO", true);
+  lo = iio_device_find_channel(dev, "RX_LO", true);
   ERROR_CHECK_NOT_NULL("unable to find lo channel", lo);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "powerdown", 0));
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "frequency", (long long) frequency));
+  ERROR_CHECK_CODE("unable to power up rx", iio_channel_attr_write_longlong(lo, "powerdown", 0));
+  ERROR_CHECK_CODE("unable to set frequency", iio_channel_attr_write_longlong(lo, "frequency", (long long) frequency));
 
   // Find the rx device
   struct iio_device *rx = iio_context_find_device(ctx, "cf-ad9361-lpc");
@@ -103,13 +104,6 @@ int main(int argc, char *argv[]) {
 
   struct iio_channel *phy_channel = iio_device_find_channel(dev, "voltage0", false);
   ERROR_CHECK_NOT_NULL("unable to find phy channel", phy_channel);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sample_rate));
-  if (gain != 0.0) {
-    ERROR_CHECK_CODE(iio_channel_attr_write(phy_channel, "gain_control_mode", "manual"));
-    ERROR_CHECK_CODE(iio_channel_attr_write_double(phy_channel, "hardwaregain", gain));
-  } else {
-    ERROR_CHECK_CODE(iio_channel_attr_write(phy_channel, "gain_control_mode", "slow_attack"));
-  }
 
   // Find RX channels (I and Q)
   struct iio_channel *rx0_i = iio_device_find_channel(rx, "voltage0", false);
@@ -120,6 +114,14 @@ int main(int argc, char *argv[]) {
   // Enable channels
   iio_channel_enable(rx0_i);
   iio_channel_enable(rx0_q);
+
+  ERROR_CHECK_CODE("unable to set sampling_frequency", plutosdr_set_sampling_frequency(dev, phy_channel, rx0_i, sample_rate));
+  if (gain != 0.0) {
+    ERROR_CHECK_CODE("unable to set gain_control_mode", iio_channel_attr_write(phy_channel, "gain_control_mode", "manual"));
+    ERROR_CHECK_CODE("unable to set gain", iio_channel_attr_write_double(phy_channel, "hardwaregain", gain));
+  } else {
+    ERROR_CHECK_CODE("unable to set gain_control_mode", iio_channel_attr_write(phy_channel, "gain_control_mode", "slow_attack"));
+  }
 
   // Create a RX buffer
   buffer = iio_device_create_buffer(rx, buffer_size, false);

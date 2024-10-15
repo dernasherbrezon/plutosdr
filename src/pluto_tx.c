@@ -30,13 +30,17 @@ int main(int argc, char *argv[]) {
   unsigned long int sample_rate = 0;
   unsigned int buffer_size = 0;
   char *filename = NULL;
-  while ((opt = getopt(argc, argv, "f:s:i:hb:")) != EOF) {
+  float power = 0.0f;
+  while ((opt = getopt(argc, argv, "f:s:p:i:hb:")) != EOF) {
     switch (opt) {
       case 'f':
         frequency = strtoul(optarg, NULL, 10);
         break;
       case 's':
         sample_rate = strtoul(optarg, NULL, 10);
+        break;
+      case 'p':
+        power = strtof(optarg, NULL);
         break;
       case 'b':
         buffer_size = strtoul(optarg, NULL, 10);
@@ -61,6 +65,11 @@ int main(int argc, char *argv[]) {
   }
   if (buffer_size == 0) {
     buffer_size = 256;
+  }
+  // limits can be read from pluto
+  if (power > 0 || power < -89.75) {
+    fprintf(stderr, "invalid power value. min: -89.75 max: 0.0");
+    return EXIT_FAILURE;
   }
 
 
@@ -87,20 +96,21 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, plutosdr_stop_async);
 
   struct iio_buffer *buffer = NULL;
+  struct iio_channel *lo = NULL;
   struct iio_context *ctx = plutosdr_find_first_ctx();
   ERROR_CHECK_NOT_NULL("unable to find ctx", ctx);
 
   struct iio_device *dev = iio_context_find_device(ctx, "ad9361-phy");
   ERROR_CHECK_NOT_NULL("unable to find device", dev);
-  struct iio_channel *lo = iio_device_find_channel(dev, "TX_LO", true);
+  lo = iio_device_find_channel(dev, "TX_LO", true);
   ERROR_CHECK_NOT_NULL("unable to find lo channel", lo);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "powerdown", 0));
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(lo, "frequency", (long long) frequency));
+  ERROR_CHECK_CODE("unable to power up tx", iio_channel_attr_write_longlong(lo, "powerdown", 0));
+  ERROR_CHECK_CODE("unable to set frequency", iio_channel_attr_write_longlong(lo, "frequency", (long long) frequency));
 
   // Find the transmit device
   struct iio_device *tx = iio_context_find_device(ctx, "cf-ad9361-dds-core-lpc");
   ERROR_CHECK_NOT_NULL("unable to find tx device", tx);
-  ERROR_CHECK_CODE(plutosdr_disable_dds(tx));
+  ERROR_CHECK_CODE("unable to disable dds", plutosdr_disable_dds(tx));
 
   // Find TX channels (I and Q)
   struct iio_channel *tx0_i = iio_device_find_channel(tx, "voltage0", true);
@@ -114,8 +124,9 @@ int main(int argc, char *argv[]) {
 
   struct iio_channel *phy_channel = iio_device_find_channel(dev, "voltage0", true);
   ERROR_CHECK_NOT_NULL("unable to find phy channel", phy_channel);
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sample_rate));
-  ERROR_CHECK_CODE(iio_channel_attr_write_longlong(phy_channel, "rf_bandwidth", sample_rate));
+
+  ERROR_CHECK_CODE("unable to set gain", iio_channel_attr_write_double(phy_channel, "hardwaregain", power));
+  ERROR_CHECK_CODE("unable to set sampling_frequency", plutosdr_set_sampling_frequency(dev, phy_channel, tx0_i, sample_rate));
 
   // Create a TX buffer
   buffer = iio_device_create_buffer(tx, buffer_size, false);
@@ -144,11 +155,13 @@ int main(int argc, char *argv[]) {
     if (format == FORMAT_CU8) {
       samples_count = actually_read / (sizeof(uint8_t) * 2);
       for (size_t i = 0; i < actually_read; i++) {
-        ((int16_t *) p_start)[i] = (int16_t) (((input_buffer[i] - 128.0) / 128.0) * 32768);
+        ((int16_t *) p_start)[i] = ((int16_t) (((input_buffer[i] - 128.0) / 128.0) * 2048)) << 4;
       }
     } else if (format == FORMAT_CS16) {
       samples_count = actually_read / (sizeof(int16_t) * 2);
       memcpy(p_start, input_buffer, actually_read);
+    } else {
+      samples_count = 0;
     }
 
     // always use push_partial because normal push won't reset buffer to full length
