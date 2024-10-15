@@ -118,15 +118,15 @@ int main(int argc, char *argv[]) {
   struct iio_channel *tx0_q = iio_device_find_channel(tx, "voltage1", true);
   ERROR_CHECK_NOT_NULL("unable to find tx Q channel", tx0_q);
 
-  // Enable channels
-  iio_channel_enable(tx0_i);
-  iio_channel_enable(tx0_q);
-
   struct iio_channel *phy_channel = iio_device_find_channel(dev, "voltage0", true);
   ERROR_CHECK_NOT_NULL("unable to find phy channel", phy_channel);
 
   ERROR_CHECK_CODE("unable to set gain", iio_channel_attr_write_double(phy_channel, "hardwaregain", power));
   ERROR_CHECK_CODE("unable to set sampling_frequency", plutosdr_set_sampling_frequency(dev, phy_channel, tx0_i, sample_rate));
+
+  // Enable channels
+  iio_channel_enable(tx0_i);
+  iio_channel_enable(tx0_q);
 
   // Create a TX buffer
   buffer = iio_device_create_buffer(tx, buffer_size, false);
