@@ -24,7 +24,9 @@
         if( lo != NULL ) {                   \
           iio_channel_attr_write_longlong(lo, "powerdown", 1);                                     \
         }                                     \
-        iio_context_destroy(ctx); \
+        if( ctx != NULL ) {                  \
+          iio_context_destroy(ctx); \
+        }                                     \
         return EXIT_FAILURE;                                  \
     }                            \
   } while (0)

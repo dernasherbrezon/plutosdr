@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
         break;
       case 'h':
       default:
-        fprintf(stderr, "%s -f frequency -s sampleRate [-i inputFile] [-b buffer size in samples] [-h]\n", argv[0]);
+        fprintf(stderr, "%s -f frequency -s sampleRate [-i inputFile] [-p tx power] [-b buffer size in samples] [-h]\n", argv[0]);
         return EXIT_FAILURE;
     }
   }
@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "invalid power value. min: -89.75 max: 0.0");
     return EXIT_FAILURE;
   }
-
 
   FILE *input;
   iq_format format = FORMAT_UNKNOWN;
@@ -155,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (format == FORMAT_CU8) {
       samples_count = actually_read / (sizeof(uint8_t) * 2);
       for (size_t i = 0; i < actually_read; i++) {
-        ((int16_t *) p_start)[i] = ((int16_t) (((input_buffer[i] - 128.0) / 128.0) * 2048)) << 4;
+        ((int16_t *) p_start)[i] = (int16_t) (((input_buffer[i] - 127.5) / 128.0) * 32768);
       }
     } else if (format == FORMAT_CS16) {
       samples_count = actually_read / (sizeof(int16_t) * 2);
