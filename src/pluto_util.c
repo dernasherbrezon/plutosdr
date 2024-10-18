@@ -86,15 +86,18 @@ int plutosdr_set_sampling_frequency(struct iio_device *dev, struct iio_channel *
     plutosdr_setup_fir_filter(dev, fir_128_4, 4);
     ERROR_CHECK_CODE("unable to set sampling_frequency", iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sampling_frequency));
     ERROR_CHECK_CODE("unable to set rf_bandwidth", iio_channel_attr_write_longlong(phy_channel, "rf_bandwidth", sampling_frequency));
+    ERROR_CHECK_CODE("unable to set sampling frequency", iio_channel_attr_write_longlong(lpc_channel, "sampling_frequency", sampling_frequency));
   } else if (sampling_frequency < MIN_DATA_RATE) {
     plutosdr_setup_fir_filter(dev, fir_128_2, 2);
     ERROR_CHECK_CODE("unable to set sampling_frequency", iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sampling_frequency));
     ERROR_CHECK_CODE("unable to set rf_bandwidth", iio_channel_attr_write_longlong(phy_channel, "rf_bandwidth", sampling_frequency));
+    ERROR_CHECK_CODE("unable to set sampling frequency", iio_channel_attr_write_longlong(lpc_channel, "sampling_frequency", sampling_frequency));
   } else if (sampling_frequency <= MAX_DATA_RATE) {
     ERROR_CHECK_CODE("unable to reset sampling_frequency", iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", 3000000));
     plutosdr_set_txrx_fir_enable(dev, false);
     ERROR_CHECK_CODE("unable to set sampling_frequency", iio_channel_attr_write_longlong(phy_channel, "sampling_frequency", sampling_frequency));
     ERROR_CHECK_CODE("unable to set rf_bandwidth", iio_channel_attr_write_longlong(phy_channel, "rf_bandwidth", sampling_frequency));
+    ERROR_CHECK_CODE("unable to set sampling frequency", iio_channel_attr_write_longlong(lpc_channel, "sampling_frequency", sampling_frequency));
   } else {
     return -1;
   }
