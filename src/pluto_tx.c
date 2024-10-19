@@ -11,6 +11,19 @@ void plutosdr_stop_async() {
   app_running = false;
 }
 
+iq_format convert_format(const char *data_format) {
+  if (data_format == NULL) {
+    return FORMAT_UNKNOWN;
+  }
+  if (strcmp(data_format, "cu8") == 0) {
+    return FORMAT_CU8;
+  }
+  if (strcmp(data_format, "cs16") == 0) {
+    return FORMAT_CS16;
+  }
+  return FORMAT_UNKNOWN;
+}
+
 iq_format detect_format(const char *filename) {
   const char *dot = strrchr(filename, '.');
   if (!dot || dot == filename) return FORMAT_UNKNOWN;
@@ -30,8 +43,9 @@ int main(int argc, char *argv[]) {
   unsigned long int sample_rate = 0;
   unsigned int buffer_size = 0;
   char *filename = NULL;
+  char *data_format = NULL;
   float power = 0.0f;
-  while ((opt = getopt(argc, argv, "f:s:p:i:hb:")) != EOF) {
+  while ((opt = getopt(argc, argv, "f:s:p:d:i:hb:")) != EOF) {
     switch (opt) {
       case 'f':
         frequency = strtoul(optarg, NULL, 10);
@@ -48,9 +62,12 @@ int main(int argc, char *argv[]) {
       case 'i':
         filename = optarg;
         break;
+      case 'd':
+        data_format = optarg;
+        break;
       case 'h':
       default:
-        fprintf(stderr, "%s -f frequency -s sampleRate [-i inputFile] [-p tx power] [-b buffer size in samples] [-h]\n", argv[0]);
+        fprintf(stderr, "%s -f frequency -s sampleRate [-i inputFile] [-p tx power] [-d explicit data format] [-b buffer size in samples] [-h]\n", argv[0]);
         return EXIT_FAILURE;
     }
   }
@@ -73,11 +90,13 @@ int main(int argc, char *argv[]) {
   }
 
   FILE *input;
-  iq_format format = FORMAT_UNKNOWN;
+  iq_format format = convert_format(data_format);
   if (filename == NULL) {
     input = stdin;
   } else {
-    format = detect_format(filename);
+    if (format == FORMAT_UNKNOWN) {
+      format = detect_format(filename);
+    }
     input = fopen(filename, "rb");
     if (input == NULL) {
       fprintf(stderr, "unable to open file: %s\n", filename);
@@ -140,7 +159,7 @@ int main(int argc, char *argv[]) {
     input_buffer_size = 0;
   }
   uint8_t *input_buffer = malloc(input_buffer_size);
-  ERROR_CHECK_NOT_NULL("unable to init temporary buffefr", input_buffer);
+  ERROR_CHECK_NOT_NULL("unable to init temporary buffer", input_buffer);
 
   while (app_running) {
     size_t actually_read = fread(input_buffer, sizeof(uint8_t), input_buffer_size, input);
