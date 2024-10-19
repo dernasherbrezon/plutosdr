@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "pluto_util.h"
+#include <inttypes.h>
 
 static volatile sig_atomic_t app_running = true;
 
@@ -193,6 +194,13 @@ int main(int argc, char *argv[]) {
   if (filename != NULL) {
     fclose(input);
   }
+
+  // assume there is no overflow / underflow
+  // pluto has 4 buffers on the device. make sure all of them sent
+  useconds_t micro_seconds_to_wait = (useconds_t) (((double) 4 * buffer_size / sample_rate) * 1000000);
+  fprintf(stderr, "waiting until last buffer sent: %" PRIu32 " micros\n", micro_seconds_to_wait);
+  usleep(micro_seconds_to_wait);
+
   iio_channel_attr_write_longlong(lo, "powerdown", 1);
   iio_buffer_cancel(buffer);
   iio_context_destroy(ctx);
