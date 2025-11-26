@@ -18,7 +18,7 @@ target_link_libraries(plutosdr ${LIBIIO})
 
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_NAME "plutosdr")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libiio0 (>= 0.21-2)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libiio0 (>= 0.21)")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Andrey Rodionov <dernasherbrezon@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "small cli program for plutosdr")
 set(CPACK_DEBIAN_PACKAGE_SECTION "comm")
